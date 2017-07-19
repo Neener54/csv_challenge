@@ -6,14 +6,17 @@ class QuestionCountError < StandardError;
 end
 
 question_count = ARGV[0]
-used_questions = {}
-strands = {}
-standards = {}
-question_ids = {}
+@used_questions = []
+@strands = []
+@standards = []
+@question_ids = []
 raise(QuestionCountError.new("Question Count must be a positive integer")) unless question_count.to_i > 0
 
 questions = []
 CSV.foreach('questions.csv', headers: true) do |row|
+  @strands << row["strand_id"]
+  @standards << row["standard_id"]
+  @used_questions << row["question_id"]
   questions << {
       strand_id:   row["strand_id"],
       strand_name: row["strand_name"],
@@ -29,14 +32,40 @@ CSV.foreach('questions.csv', headers: true) do |row|
   }
 end
 
+def frequency(obj)
+  obj.inject(Hash.new(0)) { |h,v| h[v] += 1; h }
+end
+
+def lowest(arr)
+  return 1 if arr.empty?
+  freq = frequency(arr)
+  arr.min_by { |v| freq[v] }
+end
+
+def lowest_strand
+  lowest(@strands)
+end
+
+def lowest_standard
+  lowest(@standards)
+end
+
+def lowest_question
+  lowest(@used_questions)
+end
+
 def add_question(output, questions)
   question_to_add = questions.find do |question|
-    question[:strand] == lowest_strand &&
-        question[:standard] == lowest_standard &&
-        question.dig(:question,:id) == lowest_question
+    question[:strand_id].to_i == lowest_strand &&
+        question.dig(:standard, :id).to_i == lowest_standard &&
+        question.dig(:question, :id).to_i == lowest_question
   end
+  return if question_to_add.nil?
   output << question_to_add
-  
+  @strands << question_to_add[:strands_id]
+  @standards << question_to_add.dig(:standard, :id)
+  @used_questions << question_to_add(:question, :id)
+  puts output
 end
 
 output = []

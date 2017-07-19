@@ -5,4 +5,4 @@ class QuestionCountError < StandardError; end
 
 
 question_count = ARGV[0]
-unless question_count > 0 raise QuestionCountError
+unless question_count > 0 raise QuestionCountError.new("Question Count must be a positive integer")

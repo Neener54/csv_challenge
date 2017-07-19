@@ -2,10 +2,24 @@
 # encoding: utf-8
 require 'pathname'
 require 'csv'
-class QuestionCountError < StandardError; end
+class QuestionCountError < StandardError;
+end
 
 question_count = ARGV[0]
 raise(QuestionCountError.new("Question Count must be a positive integer")) unless question_count.to_i > 0
+questions = []
 CSV.foreach('questions.csv', headers: true) do |row|
-  puts row
+  questions << {
+      strand_id:   row["strand_id"],
+      strand_name: row["strand_name"],
+      standard:    {
+          id:       row["standard_id"],
+          name:     row["standard_name"],
+          question: {
+              id:         row["question_id"],
+              difficulty: row["difficulty"]
+          }
+      }
+  }
+  puts questions
 end

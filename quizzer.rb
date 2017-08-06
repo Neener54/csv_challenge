@@ -14,6 +14,7 @@ question_count  = ARGV[0]
 @strands        = []
 @standards      = []
 @question_ids   = []
+@iterated_questions = []
 unless question_count.to_i > 0
   raise(QuestionCountError.new,
         "Question Count must be a positive integer, got #{question_count}")
@@ -42,39 +43,50 @@ end
 def lowest(arr)
   return 1 if arr.empty?
   freq = frequency(arr)
-  freq.min_by(&:last)
+  min = freq.min_by(&:last)[1].to_i
+  freq.find_all { |_k,v| v.to_i == min }.map(&:first)
 end
 
-def lowest_strand
-  strands = @used_questions.map { |question| question[:strand_id] }
+def lowest_strands
+  strands = @used_questions.map { |question| question[:strand_id].to_i }
   lowest(strands)
 end
 
-# def lowest_standard
-#   lowest(@standards)
-# end
-#
-# def lowest_question
-#   lowest(@used_questions)
-# end
+def lowest_standards
+  standards = @used_questions.map { |question| question[:standard_id].to_i }
+  lowest(standards)
+end
+
+def lowest_questions
+  questions = @used_questions.map { |question| question[:question_id].to_i }
+  lowest(questions)
+end
+
+def best_question?(question)
+  lowest_strands.include?(question[:strand_id].to_i) &&
+    lowest_standards.include?(question[:standard_id].to_i) &&
+    lowest_questions.include?(question[:question_id].to_i)
+end
 
 def add_question(output, questions)
   question = questions.sample(1)[0]
-  unless @used_questions.include?(question) && question[:strand_id] == lowest_strand
+  @iterated_questions << question
+  if best_question?(question) || @iterated_questions.length >= @questions.length
+    @iterated_questions = []
     @used_questions << question
     output << question
   end
 end
 
-output = []
-while output.length < question_count.to_i do
-  add_question(output, @questions)
+@output = []
+while @output.length < question_count.to_i do
+  add_question(@output, @questions)
 end
 
-puts "#{output.map { |o| o[:question_id] }.join(',')}"
+puts "#{@output.map { |o| o[:question_id] }.join(',')}"
 CSV.open('./usage.csv', 'wb') do |csv|
   csv << ['question_id']
-  output.each { |question| csv << [question[:question_id]] }
+  @output.each { |question| csv << [question[:question_id]] }
 end
 
 

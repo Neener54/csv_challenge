@@ -2,7 +2,6 @@
 # encoding: utf-8
 require 'pathname'
 require 'csv'
-require 'pry'
 
 class QuestionCountError < StandardError
 end
@@ -11,9 +10,6 @@ end
 
 question_count  = ARGV[0]
 @used_questions = []
-@strands        = []
-@standards      = []
-@question_ids   = []
 @iterated_questions = []
 unless question_count.to_i > 0
   raise(QuestionCountError.new,
@@ -22,8 +18,6 @@ end
 
 @questions = []
 CSV.foreach('questions.csv', headers: true) do |row|
-  @strands << row['strand_id'].to_i
-  @standards << row['standard_id'].to_i
   question = {
       strand_id:           row['strand_id'],
       strand_name:         row['strand_name'],

@@ -2,6 +2,7 @@
 # encoding: utf-8
 require 'pathname'
 require 'csv'
+require 'pry'
 
 class QuestionCountError < StandardError
 end
@@ -22,20 +23,44 @@ end
 CSV.foreach('questions.csv', headers: true) do |row|
   @strands << row['strand_id'].to_i
   @standards << row['standard_id'].to_i
-  @used_questions << row['question_id'].to_i
-  @questions << {
-    strand_id:           row['strand_id'],
-    strand_name:         row['strand_name'],
-    standard_id:         row['standard_id'],
-    standard_name:       row['standard_name'],
-    question_id:         row['question_id'],
-    question_difficulty: row['difficulty']
+  question = {
+      strand_id:           row['strand_id'],
+      strand_name:         row['strand_name'],
+      standard_id:         row['standard_id'],
+      standard_name:       row['standard_name'],
+      question_id:         row['question_id'],
+      question_difficulty: row['difficulty']
   }
+  @questions << question
+  @used_questions << question
 end
+
+def frequency(obj)
+  obj.inject(Hash.new(0)) { |h,v| h[v.to_i] += 1; h }
+end
+
+def lowest(arr)
+  return 1 if arr.empty?
+  freq = frequency(arr)
+  freq.min_by(&:last)
+end
+
+def lowest_strand
+  strands = @used_questions.map { |question| question[:strand_id] }
+  lowest(strands)
+end
+
+# def lowest_standard
+#   lowest(@standards)
+# end
+#
+# def lowest_question
+#   lowest(@used_questions)
+# end
 
 def add_question(output, questions)
   question = questions.sample(1)[0]
-  unless @used_questions.include?(question)
+  unless @used_questions.include?(question) && question[:strand_id] == lowest_strand
     @used_questions << question
     output << question
   end
@@ -43,9 +68,6 @@ end
 
 output = []
 while output.length < question_count.to_i do
-  if @used_questions.length == @questions.length
-    @used_questions = []
-  end
   add_question(output, @questions)
 end
 
